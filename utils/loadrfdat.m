@@ -1,0 +1,77 @@
+sens = zeros(50,50);
+
+RF1 = 46;
+RF2 = 61;
+RFt = 50;
+
+[X Y] = meshgrid(1:RF2, 1:RF1);
+
+clf;
+xlim([1 RFx]);
+ylim([1 RFy]);
+
+figure(1), clf;
+figure(2), clf;
+
+cell = 1;
+while(1);
+    rf_fldname = sprintf('c%d_rf', cell);
+    pos_fldname = sprintf('c%d_pos', cell);
+    ker_fldname = sprintf('c%d_ker',cell);
+    if(~isfield(rfdat, rf_fldname))
+        break;
+    end
+    
+    if(isnan(rfdat.shape(cell)))
+        cell = cell + 1;
+        continue;
+    end
+    
+    fprintf('Processing cell %3d...\n', cell);  
+    
+    rf = reshape(shiftdim(rfdat.(rf_fldname),1), RF1, RF2, RFt);
+    pos = rfdat.(pos_fldname);
+    ker = rfdat.(ker_fldname);
+    color = segevcmap(rfdat.shape(cell));
+    
+%     clf;
+%     for i = 1:50
+%         pcolor(rf(:,:,i));
+%         caxis([min(rf(:)) max(rf(:))]);
+%         pause(1/10);
+%     end
+
+    % do PCA on temporal data to get temporal kernel (1st PC)
+    [coeff score] = princomp(reshape(rf, RF1*RF2, RFt));
+    kerPCA = flipud(coeff(:,1));
+    kerPCA = kerPCA * -sign(mean(kerPCA(1:10)));
+    figure(1)
+    plot(1:length(kerPCA), kerPCA, '-', 'Color', color, 'LineWidth', 2);
+    hold on
+    
+    % project the temporal data onto the kernel to get spatial map
+    mapPCA = reshape(score(:,1), RF1, RF2);
+    mapRMS = sum(rf.^2, 3);
+    
+    % fit a 2D gaussian to the spatial map and draw 1-sigma contour
+    % first find local nhood around peak
+    [val ind] = max(mapRMS(:));
+    [I J] = ind2sub(size(mapRMS), ind);
+    delta = 5;
+    nhood = mapRMS(I-delta:I+delta, J-delta:J+delta);
+    mapRMS = 0*mapRMS;
+    mapRMS(I-delta:I+delta, J-delta:J+delta) = nhood;
+    
+%     h = pcolor(X,Y,mapRMS);
+%     hold on
+%     set(h, 'EdgeColor', 'none');
+    
+    [A mu sigma] = fitgauss2(X,Y,mapRMS);
+    figure(2);
+    gausscontour(mu, sigma, color);
+    hold on;
+    drawnow;
+    
+    cell = cell+1;
+end
+
