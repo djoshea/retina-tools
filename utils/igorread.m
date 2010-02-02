@@ -22,7 +22,7 @@ while(1)
         break;
     end
     C = textscan(nameline, '%s');
-    namelist = C{1};
+    namelist = C{1}
     
     % read in data table
     dat = [];
@@ -44,6 +44,10 @@ while(1)
         end
         
         dat(size(dat,1)+1, :) = vals;
+    end
+    
+    if(isempty(dat))
+        continue; % skip empty waves
     end
     
     % decide whether to assign as one data table or individual named vectors  
