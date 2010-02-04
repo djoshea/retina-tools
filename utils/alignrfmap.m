@@ -1,107 +1,148 @@
-function alignrfmap(rfs)
-% Align receptive field maps from successive recordings with translation
-% offset
-
-nrf = length(rfs);
-rfoffset = zeros(nrf,2);
-colormults = linspace(1,1, nrf);
-figure(1), clf, hold on;
-rfhand = cell(nrf,1);
-
-for i = 1:nrf
-    % replace all shape==0 with shape=50 to be able to show/hide it
-    for ci = 1:length(rfs{i}.shape)
-        if(rfs{i}.shape(ci) == 0)
-            rfs{i}.shape(ci) = 50;
-        end
-    end
-    
-    % then plot all the ellipses and save the handles
-    rfhand{i} = plotrfmap(rfs{i}, 1, colormults(i));
-end
-
-% position the axes and add some controls
-title('Receptive Field Map Manual Alignment');
-set(gcf,'Toolbar','none');
-figh = gcf;
-axh = gca;
-
-% positions for uicontrols will be handled by figureResizeFcn
-
-% show maps label
-uicontrol('Style', 'text', 'String', 'Show Maps:','Tag', 'lblShowMaps');
-% show maps checkboxes
-checkh = zeros(nrf,1); % checkbox handles for show maps
-for i = 1:nrf
-    checkh(i) = uicontrol('Style', 'checkbox', 'String', rfs{i}.name, ...
-        'Tag', sprintf('m%d',i), 'Callback', @showMapCheckboxCallback);
-    set(checkh(i), 'Value', get(checkh(i),'Max')); 
-end
-
-% show colors label
-uicontrol('Style', 'text', 'String', 'Show Classes:','Tag', 'lblShowColors');
-% show colors checkboxes
-[~, cnames] = segevcmap();
-checkcolorh = zeros(length(cnames),1); % checkbox handles for show maps
-for i = 1:length(cnames)
-    if(isempty(cnames{i})) % skip unused entries
-        continue;
-    end
-    checkcolorh(i) = uicontrol('Style', 'checkbox', 'String', cnames{i}, ...
-        'Tag', sprintf('c%d',i), 'Callback', @showColorCheckboxCallback);
-    set(checkcolorh(i), 'Value', get(checkcolorh(i),'Max')); 
-end
-
-figureResizeFcn();
-set(gcf, 'ResizeFcn', @figureResizeFcn);
+function alignrfmap(rfs,rfoffset)
+% Align receptive field maps from successive recordings with translation offset
 
 % drag and drop code adapted from interactive_move by:
 % J.P. Rueff, Aout 2004, modified Juin 2005
 % http://www.mathworks.com/matlabcentral/fileexchange/5751-click-n-drag-plot
 
+nrf = length(rfs);
+
+if(~exist('rfoffset', 'var')) % default to 0 offset
+    rfoffset = zeros(nrf,2);
+end
+
+% progresively dim the receptive fields by chaning the second arg
+colormults = linspace(1,1, nrf);
+% color map listing and names
+[~, cnames] = segevcmap(); 
+
+% replace all shape==0 with shape=50 to be able to show/hide it
+for i = 1:nrf
+    for ci = 1:length(rfs{i}.shape)
+        if(rfs{i}.shape(ci) == 0)
+            rfs{i}.shape(ci) = 50;
+        end
+    end
+end
+
+figure(99), clf, hold on;
+figh = gcf;
+axh = gca;
+defaultTitle = 'Receptive Field Map Manual Alignment';
+
+% initialize handles struct for callback handlers
 handles = guidata(gca);
-handles.macro_active=0;
-%handles.lineObj = findobj(gca, 'Type', 'line');
-handles.lineObj=[findobj(gca, 'Type', 'line');findobj(gca, 'Type', 'patch')];
-handles.key='';
-handles.mapnum = 0;
+handles.macro_active=0; % currently in a drag?
+handles.key=''; % current key pressed (for x or y constraining of drag)
+handles.mapnum = 0; % currently dragging map id?
 handles.newoffset = [ 0 0 ]; % new offset refers to the delta for this down/drag/up event
 handles.totaloffset = []; % the new value to update the rfoffset row with after the drag
+handles.currentTitle = defaultTitle;
+handles.mapVisible = ones(nrf,1); % boolean visibility table for rfs
+handles.colorVisible = ones(length(cnames),1); % color visibility table a la segevcmap
+handles.init_state = uisuspend(figh);
+handles.drawMode = 'allmaps'; % showing all maps (rather than merged cells)
+handles.rfhand = [];
+handles.rfmergehand = [];
 guidata(gca,handles);
-handles.currentTitle = get(get(gca, 'Title'), 'String');
+clear handles;
 
-handles.mapVisible = ones(nrf,1);
-handles.colorVisible = ones(length(cnames),1);
-handles.init_state = uisuspend(gcf);
-guidata(gca,handles);
+[checkmaph checkcolorh] = initGui();
+figureResizeFcn();
+drawAllMaps(0); % draw all the maps and save the handles
+updateVisibility();
+
+% globals for merged maps
+rfmerge = [];
+assignunique = {};
+foundinmap = []; % how many of map j's cells are assigned to unique cell i
 
 showColor(50, 0); % hide color 50: unclassified
+return;
 
-set(gcf, 'windowbuttondownfcn', {@onclick,1});
-set(gcf, 'windowbuttonmotionfcn', {@onclick,2});
-set(gcf, 'windowbuttonupfcn', {@onclick,3});
-axis manual;
-set(gcf, 'keypressfcn', {@onclick,4});
 
-%  uirestore(handles.init_state);
- 
+%% initialize GUI and draw controls
+function [checkmaph checkcolorh] = initGui()
+    handles = guidata(axh);
+    set(figh,'Name','Receptive Field Map Alignment');
+    set(figh,'NumberTitle','off');
+    title(handles.currentTitle);
+    % position the axes and add some controls
+    set(figh,'Toolbar','none');
+    figback = get(gcf,'Color');
+
+    % positions for uicontrols will be handled by figureResizeFcn
+
+    % show maps label
+    uicontrol('Style', 'text', 'String', 'Show Maps:', 'Tag', 'lblShowMaps', ...
+        'BackgroundColor', figback, 'FontWeight', 'bold');
+    % show maps checkboxes
+    checkmaph = zeros(nrf,1); % checkbox handles for show maps
+    for j = 1:nrf
+        checkmaph(j) = uicontrol('Style', 'checkbox', 'String', rfs{j}.name, ...
+            'Tag', sprintf('m%d',j), 'Callback', @showMapCheckboxCallback);
+        set(checkmaph(j), 'Value', get(checkmaph(j),'Max')); 
+    end
+
+    % show colors label
+    uicontrol('Style', 'text', 'String', 'Show Classes:','Tag', 'lblShowColors', ...
+        'BackgroundColor', figback, 'FontWeight', 'bold');
+    % show colors checkboxes
+    checkcolorh = zeros(length(cnames),1); % checkbox handles for show maps
+    for j = 1:length(cnames)
+        if(isempty(cnames{j})) % skip unused entries
+            continue;
+        end
+        checkcolorh(j) = uicontrol('Style', 'checkbox', 'String', cnames{j}, ...
+            'Tag', sprintf('c%d',j), 'Callback', @showColorCheckboxCallback);
+        set(checkcolorh(j), 'Value', get(checkcolorh(j),'Max')); 
+    end
+
+    % Alignment labels
+    uicontrol('Style', 'text', 'String', 'Alignment:', 'Tag', 'lblAlignment', ...
+        'BackgroundColor', figback, 'FontWeight', 'bold');
+    uicontrol('Style', 'pushbutton', 'String', 'Auto Coarse', ...
+        'Tag', 'btnAutoCoarse', 'Callback', @autoCoarseClick);
+    uicontrol('Style', 'togglebutton', 'String', 'Merge Registered Cells', ...
+        'Tag', 'btnMergeCells', 'Callback', @toggleMergeCells);
+
+    set(gcf, 'ResizeFcn', @figureResizeFcn);
+    
+    axis manual;
+    set(figh, 'windowbuttondownfcn', {@onAxesClick,1});
+    set(figh, 'windowbuttonmotionfcn', {@onAxesClick,2});
+    set(figh, 'windowbuttonupfcn', {@onAxesClick,3});
+    set(figh, 'keypressfcn', {@onAxesClick,4});
+end
+
 %% handle plot drag and drop event for aligning maps
-function onclick(~,~,type)
-
-    handles=guidata(gca);
-
+function onAxesClick(~,~,type)
+    handles=guidata(axh);
+    rfhand = handles.rfhand;
     switch type
         case 1 %---Button down
+            % ignore if already dragging or in merged map mode
             if(handles.macro_active)
                 return;
             end
-            handles.macro_active=1;
-            out=get(gca,'CurrentPoint');
-            set(gca,'NextPlot','replace')
-            set(gcf,'Pointer','crosshair');       
+            handles.macro_active = 1;
+            set(figh,'Pointer','crosshair'); 
+            
+            out=get(axh,'CurrentPoint');
+            set(axh,'NextPlot','replace')
+                  
             handles.xpos0=out(1,1);%--store initial position x
             handles.ypos0=out(1,2);%--store initial position y
-            xl=get(gca,'XLim');yl=get(gca,'YLim');
+            xl=get(axh,'XLim');yl=get(axh,'YLim');
+            
+            if(~strcmp(handles.drawMode,'allmaps'))
+                % if not in drag mode, then we're always dragging the
+                % whole plot
+                handles.mapnum = 0;
+                guidata(axh,handles);
+                return;
+            end
+            
             % within plot bounds?
             if ((handles.xpos0 > xl(1) && handles.xpos0 < xl(2)) && (handles.ypos0 > yl(1) && handles.ypos0 < yl(2)))
                 % which map was selected?
@@ -121,14 +162,12 @@ function onclick(~,~,type)
                     % moving whole plot --> change limits
                     title(handles.currentTitle);
                 end
-                guidata(gca,handles);
-            else
-                % clicked outside plot bounds, ignore
-            end    
+            end   
+            guidata(axh,handles);
         case 2%---Button Move
             if(handles.macro_active)
-                out=get(gca,'CurrentPoint');
-                set(gcf,'Pointer','fullcrosshair');
+                out=get(axh,'CurrentPoint');
+                set(figh,'Pointer','fullcrosshair');
                 
                 % calculate new offset but display total offset in title
                 % bar
@@ -162,18 +201,18 @@ function onclick(~,~,type)
                     end
                               
                 else % moving the whole plot
-                    xl=get(gca,'XLim');yl=get(gca,'YLim');
-                    set(gca, 'XLim', xl-handles.newoffset(1));
-                    set(gca, 'YLim', yl-handles.newoffset(2));
+                    xl=get(axh,'XLim');yl=get(axh,'YLim');
+                    set(axh, 'XLim', xl-handles.newoffset(1));
+                    set(axh, 'YLim', yl-handles.newoffset(2));
                 end
 
-                guidata(gca,handles)
+                guidata(axh,handles)
             end
 
         case 3 %----Button up (cleanup some variable)
             if(handles.macro_active)
-                set(gcf,'Pointer','arrow');
-                set(gca,'NextPlot','add')
+                set(figh,'Pointer','arrow');
+                set(axh,'NextPlot','add')
                 if handles.mapnum~=0
                     for j = 1:length(rfhand{handles.mapnum})
                         if(~isnan(rfhand{handles.mapnum}(j)))
@@ -191,22 +230,25 @@ function onclick(~,~,type)
                 
                 handles.key='';
                 handles.macro_active=0;
-                guidata(gca,handles)
+                guidata(axh,handles)
             end
 
         case 4 %----Button press
-            handles.key=get(gcf,'CurrentCharacter');
-            guidata(gca,handles)
+            handles.key=get(figh,'CurrentCharacter');
+            guidata(axh,handles)
     end
+    
+    guidata(axh,handles);
 end
     
 %% determine closest map to cursor and dash selected rf map traces
 function [mapnum, mapxData, mapyData]=map_select(pos)
-
+    % access handles through parent onAxesClick function
+    rfhand = handles.rfhand;
     %-define searching windows
-    xl=get(gca,'XLim');
+    xl=get(axh,'XLim');
     xwin=abs(xl(1)-xl(2))/100;
-    yl=get(gca,'YLim');
+    yl=get(axh,'YLim');
     ywin=abs(yl(1)-yl(2))/100;
 
     mindist = zeros(nrf,1);
@@ -286,7 +328,7 @@ function figureResizeFcn(~, ~, ~)
     set(findobj('Tag', 'lblShowMaps'),'Position', pos);
     for j = 1:nrf
         pos(2) = pos(2) - uiydelta;
-        set(checkh(j), 'Position', pos);
+        set(checkmaph(j), 'Position', pos);
     end
     
     pos(2) = pos(2) - 2*uiydelta;
@@ -299,32 +341,38 @@ function figureResizeFcn(~, ~, ~)
             set(checkcolorh(j), 'Position', pos);
         end
     end
+    
+    pos(2) = pos(2) - 3*uiydelta;
+    
+    % alignment positioning
+    set(findobj('Tag', 'lblAlignment'), 'Position', pos);
+    
+    pos(2) = pos(2) - 2*uiydelta;
+    pos(4) = 1.5*uiydelta;
+    set(findobj('Tag', 'btnAutoCoarse'), 'Position', pos);
+    
+    pos(2) = pos(2) - 2*uiydelta;   
+    set(findobj('Tag', 'btnMergeCells'), 'Position', pos);
+    
+    pos(4) = uiydelta;
 
-    set(gcf, 'Units', old_units);
+    set(figh, 'Units', old_units);
     set(axh, 'Units', old_ax_units);
 end
 
 %% show/hide specific maps by number
 function showMapCheckboxCallback(hObject, ~, ~)
+    handles = guidata(axh);
     tag = get(hObject, 'Tag');
     mapnum = str2num(tag(2:end)); % tag should be 'm#' 
     if (get(hObject,'Value') == get(hObject,'Max')) % checked?
-        visible = 'on';
         handles.mapVisible(mapnum) = 1;
     else
-        visible = 'off';
         handles.mapVisible(mapnum) = 0;
     end
-   
-    for k = 1:length(rfhand{mapnum})
-        % is this a valid trace? are we hiding it or showing one that is not a currently hidden color?
-       if(~isnan(rfhand{mapnum}(k)) && ...
-               (~handles.mapVisible(mapnum) || handles.colorVisible(rfs{mapnum}.shape(k))))
-           set(rfhand{mapnum}(k), 'Visible', visible);
-       end
-    end
+    guidata(axh, handles);
     
-    guidata(gca, handles);
+    updateVisibility();
 end
 
 %% show/hide specific colors (callback function for checkboxes)
@@ -340,13 +388,11 @@ function showColorCheckboxCallback(hObject, ~, ~)
 end
 
 function showColor(cid, vis)
-    handles = guidata(gca);
+    handles = guidata(axh);
     if(vis)
-        visible = 'on';
         handles.colorVisible(cid) = 1;
         checkvalset = 'Max';
     else
-        visible = 'off';
         handles.colorVisible(cid) = 0;
         checkvalset = 'Min';
     end
@@ -354,17 +400,165 @@ function showColor(cid, vis)
     % update the checkbox too, in case not called from callback
     hobj = findobj('Tag', sprintf('c%d', cid));
     set(hobj, 'Value', get(hobj, checkvalset));
-   
+    
+    guidata(axh, handles);
+    updateVisibility();
+end
+
+%% autoalignment
+function autoCoarseClick(~, ~, ~)
+    handles = guidata(axh);
+    rfhand = handles.rfhand;
+    set(figh, 'Pointer', 'watch');
+    title('Coarse Auto Alignment...');
+    drawnow
+    autooffsets = autoaligncoarse(rfs, rfoffset);
+    deltaoffsets = autooffsets - rfoffset;
     for mapi = 1:nrf
-        for j = 1:length(rfhand{mapi})
-            % is it a valid trace and is it the current color?
-            if(~isnan(rfhand{mapi}(j)) && rfs{mapi}.shape(j) == cid)
-                set(rfhand{mapi}(j), 'Visible', visible);
+        for j = 1:length(rfhand{mapi}) % loop over cells
+            if(~isnan(rfhand{mapi}(j)))
+                % move this trace in the plot
+                xdata = get(rfhand{mapi}(j),'XData') + deltaoffsets(mapi,1);
+                ydata = get(rfhand{mapi}(j),'YData') + deltaoffsets(mapi,2);
+                set(rfhand{mapi}(j),'XData',xdata); %-move x trace
+                set(rfhand{mapi}(j),'YData',ydata);%-move y trace
+                % and update the mapxData & mapyData
             end
         end
     end
+    rfoffset = autooffsets;
+    title('Performed Coarse Auto Alignment');
+    set(figh,'Pointer','arrow');
+end
+
+%% rf map merging
+function toggleMergeCells(hobj,~,~)
+    set(figh, 'Pointer', 'watch');
+    handles = guidata(axh);
+    state = get(hobj, 'Value') == get(hobj, 'Max');
+    if(state)
+        title('Merging Maps...');
+        drawnow
     
-    guidata(gca, handles);
+        [rfunique shapeunique assignunique foundinmap] = mergemaps(rfs,rfoffset);
+       
+        rfmerge = [];
+        rfmerge.shape = shapeunique;
+        rfmerge.Parameters = rfunique;
+    
+        drawMerged();
+        handles.currentTitle = sprintf('Merged Maps: %d Unique Cells',size(rfunique,1));
+        title(handles.currentTitle);
+        
+        handles.drawMode = 'merged';
+    else
+        handles.currentTitle = defaultTitle;
+        title(handles.currentTitle);
+%         drawAllMaps();
+        handles.drawMode = 'allmaps';
+    end
+    
+    guidata(axh,handles);
+    updateVisibility();
+    set(figh, 'Pointer', 'arrow');
+end
+
+function drawMerged()
+    xl = get(axh,'XLim'); yl = get(axh, 'YLim');
+    handles = guidata(axh);
+    handles.rfmergehand = plotrfmap(rfmerge, figh);
+    guidata(axh, handles);
+    
+    xlim(xl); ylim(yl);
+end
+
+function rfhand = drawAllMaps(keepaxes)
+    if(~exist('keepaxes','var'))
+        keepaxes = 1;
+    end
+    if(keepaxes)
+        xl = get(axh,'XLim'); yl = get(axh, 'YLim');
+    end
+    handles = guidata(axh);
+    if(keepaxes)
+        xlim(xl); ylim(yl);
+        axis manual;
+    else
+        axis auto;
+    end
+    handles.drawMode = 'allmaps';
+    handles.rfhand = cell(nrf,1);
+    for mi = 1:nrf
+        handles.rfhand{mi} = plotrfmap(rfs{mi}, figh, colormults(mi), rfoffset(mi,:));
+    end
+    axis manual
+    
+    guidata(axh,handles);
+end
+
+%% utility to hide/show appropriate ellipses based on color/map checkboxes
+function updateVisibility()
+    % loop over every trace and decide whether to make it visible based on
+    % map visiblity and color visibility. all maps vs. merged mode aware.]
+    handles = guidata(axh);
+    
+    % handle all maps displayed
+    rfhand = handles.rfhand;
+    for mapi = 1:nrf
+        for j = 1:length(rfhand{mapi})
+            if(isnan(rfhand{mapi}(j))) % never displayed anyway
+                continue;
+            end
+
+            visible = 'on';
+            if(~strcmp(handles.drawMode, 'allmaps')) % not in this mode
+                visible = 'off';
+            end
+            if(~handles.mapVisible(mapi))  % is the map hidden
+                visible = 'off';
+            end
+            if(~handles.colorVisible(rfs{mapi}.shape(j))) % color hidden?
+                visible = 'off';
+            end
+
+            set(rfhand{mapi}(j), 'Visible', visible);
+        end
+    end      
+
+    % handle single merged map
+    rfmergehand = handles.rfmergehand;
+    for j = 1:length(rfmergehand)
+        visible = 'on';
+
+        % hide based on mode;
+        if(~strcmp(handles.drawMode, 'merged'))
+            visible = 'off';
+        end
+        
+        % hide based on color?
+        if(~handles.colorVisible(rfmerge.shape(j)))
+            visible = 'off';
+        end
+
+        % hide if it is not found in any visible map
+        inVisibleMap = 0;
+        for mi = 1:nrf
+            if(~handles.mapVisible(mi))
+                continue;
+            end
+            if(foundinmap(j,mi))
+                inVisibleMap = 1;
+                break;
+            end
+        end
+        if(~inVisibleMap)
+            visible = 'off';
+        end
+
+        set(rfmergehand(j), 'Visible', visible);
+    end
+    
+    guidata(axh,handles);
 end
 
 end

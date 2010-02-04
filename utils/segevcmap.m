@@ -27,7 +27,7 @@ cmap(29,:) = [0.9 0.9 0.6]; % yellow (monophasic OFF)
 cmap(43,:) = [0 0 0.7]; % blue (slow ON)
     names{43} = 'Blue: Slow ON';
 cmap(50,:) = greylevel*ones(1,3);
-    names{50} = 'Unclassified'
+    names{50} = 'Unclassified';
 
 if(nargin == 0) % return entire map and names
     c = cmap;
