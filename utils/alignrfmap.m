@@ -44,6 +44,8 @@ handles.init_state = uisuspend(figh);
 handles.drawMode = 'allmaps'; % showing all maps (rather than merged cells)
 handles.rfhand = [];
 handles.rfmergehand = [];
+handles.pairEdgeVisible = 0;
+handles.pairEdgeHand = [];
 guidata(gca,handles);
 clear handles;
 
@@ -56,6 +58,7 @@ updateVisibility();
 rfmerge = [];
 assignunique = {};
 foundinmap = []; % how many of map j's cells are assigned to unique cell i
+shapeunique = [];
 
 showColor(50, 0); % hide color 50: unclassified
 return;
@@ -64,12 +67,14 @@ return;
 %% initialize GUI and draw controls
 function [checkmaph checkcolorh] = initGui()
     handles = guidata(axh);
+    movegui(figh, 'center');
     set(figh,'Name','Receptive Field Map Alignment');
     set(figh,'NumberTitle','off');
     title(handles.currentTitle);
     % position the axes and add some controls
     set(figh,'Toolbar','none');
     figback = get(gcf,'Color');
+    axis manual;
 
     % positions for uicontrols will be handled by figureResizeFcn
 
@@ -106,9 +111,17 @@ function [checkmaph checkcolorh] = initGui()
     uicontrol('Style', 'togglebutton', 'String', 'Merge Registered Cells', ...
         'Tag', 'btnMergeCells', 'Callback', @toggleMergeCells);
 
+    % Pairwise Simultaneity
+    uicontrol('Style', 'text', 'String', 'Pairwise:', 'Tag', 'lblPairwise', ...
+        'BackgroundColor', figback, 'FontWeight', 'bold');
+    uicontrol('Style', 'pushbutton', 'String', 'Pairwise Simultaneity',...
+        'Tag', 'btnPairwise', 'Callback', @pairwiseSimul);
+    uicontrol('Style', 'togglebutton', 'String', 'Adjacency Simultaneity', ...
+        'Tag', 'btnAdjacency', 'Callback', @adjacentSimul);
+    
     set(gcf, 'ResizeFcn', @figureResizeFcn);
     
-    axis manual;
+    % Axis Mouse Events
     set(figh, 'windowbuttondownfcn', {@onAxesClick,1});
     set(figh, 'windowbuttonmotionfcn', {@onAxesClick,2});
     set(figh, 'windowbuttonupfcn', {@onAxesClick,3});
@@ -355,7 +368,21 @@ function figureResizeFcn(~, ~, ~)
     set(findobj('Tag', 'btnMergeCells'), 'Position', pos);
     
     pos(4) = uiydelta;
+    pos(2) = pos(2) - 2*uiydelta;
+    
+    % Pairwise Simultaneity
+    set(findobj('Tag','lblPairwise'), 'Position', pos);
+    
+    pos(2) = pos(2) - 2*uiydelta;
+    pos(4) = 1.5*uiydelta;
+    set(findobj('Tag', 'btnPairwise'), 'Position', pos);
+    
+    pos(2) = pos(2) - 2*uiydelta;
+    set(findobj('Tag', 'btnAdjacency'), 'Position', pos);
 
+    pos(4) = uiydelta;
+    
+    % restore original units
     set(figh, 'Units', old_units);
     set(axh, 'Units', old_ax_units);
 end
@@ -447,7 +474,6 @@ function toggleMergeCells(hobj,~,~)
         rfmerge.Parameters = rfunique;
     
         drawMerged();
-        handles.currentTitle = sprintf('Merged Maps: %d Unique Cells',size(rfunique,1));
         title(handles.currentTitle);
         
         handles.drawMode = 'merged';
@@ -467,12 +493,13 @@ function drawMerged()
     xl = get(axh,'XLim'); yl = get(axh, 'YLim');
     handles = guidata(axh);
     handles.rfmergehand = plotrfmap(rfmerge, figh);
+    handles.uniqueVisible = ones(length(handles.rfmergehand),1);
     guidata(axh, handles);
     
     xlim(xl); ylim(yl);
 end
 
-function rfhand = drawAllMaps(keepaxes)
+function drawAllMaps(keepaxes)
     if(~exist('keepaxes','var'))
         keepaxes = 1;
     end
@@ -556,9 +583,57 @@ function updateVisibility()
         end
 
         set(rfmergehand(j), 'Visible', visible);
+        handles.uniqueVisible(j) = strcmp(visible, 'on');
     end
     
+    % handle adjacency Pair edges
+    if( handles.pairEdgeVisible)
+        visible = 'on';
+    else
+        visible = 'off';
+    end
+    for ei = 1:length(handles.pairEdgeHand)
+        set(handles.pairEdgeHand(ei), 'Visible', visible);
+    end
+    
+    if(strcmp(handles.drawMode, 'merged'))
+        handles.currentTitle = sprintf('Merged Maps: %d / %d Unique Cells',...
+            nnz(handles.uniqueVisible), size(rfmerge.Parameters,1));
+        title(handles.currentTitle);
+    end
     guidata(axh,handles);
+end
+
+%% pairwise/adjacency simultaneity
+function pairwiseSimul(~,~,~)
+    handles = guidata(axh);
+    % filter uniques by those shown currently
+    selshapeunique = shapeunique(logical(handles.uniqueVisible));
+    selfoundinmap = foundinmap(logical(handles.uniqueVisible),logical(handles.mapVisible));
+    cellinds = 1:length(shapeunique);
+    cellinds = cellinds(logical(handles.uniqueVisible));
+    newfig = figure();
+    pairwise = pairwiseSimultaneity(selshapeunique, selfoundinmap, cellinds, newfig );
+end
+
+function adjacentSimul(hobj, ~, ~)
+    handles = guidata(axh);
+    state = get(hobj, 'Value') == get(hobj, 'Max');
+    if(state)
+        % filter uniques by those shown currently
+        selrfunique = rfmerge.Parameters(logical(handles.uniqueVisible),:);
+        selfoundinmap = foundinmap(logical(handles.uniqueVisible),logical(handles.mapVisible));
+        
+        [pairEdge pairEdgeSimul edgeHands] = adjacencySimultaneity( selrfunique, selfoundinmap, 'pair', axh);
+        
+        handles.pairEdgeHand = edgeHands;
+        handles.pairEdgeVisible = 1;
+    else
+        handles.pairEdgeVisible = 0;
+    end
+    
+    guidata(axh, handles);
+    updateVisibility();
 end
 
 end

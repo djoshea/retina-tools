@@ -7,41 +7,49 @@ function [ rfunique shapeunique assign foundinmap Nassigned ] = mergemaps( rfs, 
 %   indicates which row in rfunique each cell in that map is equivalent to
 %   e.g. assign{m}(j) == c indicates that map m cell j is the same as cell c
 
-
 nrf = length(rfs);
 assign = cell(nrf,1);
 rfunique = []; % average RF params for each unique cell
 shapeunique = []; % shape of each unique cell
 foundinmap = []; % counts number of cells from map j assigned as unique cell i
-for mi = 1:nrf
-   for ci = 1:length(rfs{mi}.Parameters)
-       if(isnan(rfs{mi}.shape(ci)))
-           continue;
-       end
-       
-       % shift Parameters x0 and y0 by offset for this map
-       prow = rfs{mi}.Parameters(ci,:);
-       prow(3) = prow(3) + offset(mi,1);
-       prow(5) = prow(5) + offset(mi,2);
+
+[~, cnames] = segevcmap(); 
+
+for si = 1:length(cnames) % do one color at a time for grouping purposes
+    if(isempty(cnames{si}))
+        continue;
+    end
     
-       match = cellmatch(prow, rfs{mi}.shape(ci), rfunique, shapeunique);
-       if(match)
-           % assign this cell to rfunique row match
-           assign{mi}(ci) = match;
-           % and update the average RF params in rfunique(match,:)
-%            rfunique(match,:) = (rfunique(match,:)*Nassigned(match) ...
-%                + prow)/(Nassigned(match)+1);
-           % increment the counter
-           foundinmap(match,mi) = foundinmap(match,mi) + 1;
-       else
-           % add as new cell to rfunique
-           rfunique(end+1,:) = prow;
-           shapeunique(end+1,:) = rfs{mi}.shape(ci);
-           assign{mi}(ci) = size(rfunique,1);
-           foundinmap(end+1,:) = zeros(1,nrf);
-           foundinmap(end,mi) = 1;
-       end
-   end
+    for mi = 1:nrf % loop over 
+        for ci = 1:length(rfs{mi}.Parameters)
+            if(rfs{mi}.shape(ci) ~= si) % only the current color/shape id
+                continue;
+            end
+            
+            % shift Parameters x0 and y0 by offset for this map
+            prow = rfs{mi}.Parameters(ci,:);
+            prow(3) = prow(3) + offset(mi,1);
+            prow(5) = prow(5) + offset(mi,2);
+            
+            match = cellmatch(prow, rfs{mi}.shape(ci), rfunique, shapeunique);
+            if(match)
+                % assign this cell to rfunique row match
+                assign{mi}(ci) = match;
+                % and update the average RF params in rfunique(match,:)
+                %            rfunique(match,:) = (rfunique(match,:)*Nassigned(match) ...
+                %                + prow)/(Nassigned(match)+1);
+                % increment the counter
+                foundinmap(match,mi) = foundinmap(match,mi) + 1;
+            else
+                % add as new cell to rfunique
+                rfunique(end+1,:) = prow;
+                shapeunique(end+1,:) = rfs{mi}.shape(ci);
+                assign{mi}(ci) = size(rfunique,1);
+                foundinmap(end+1,:) = zeros(1,nrf);
+                foundinmap(end,mi) = 1;
+            end
+        end
+    end
 end
 
 function match = cellmatch(p, shape, plist, shapelist)
