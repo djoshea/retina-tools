@@ -10,9 +10,16 @@ FixationTime = 1; % time between saccades (s)
 SaccadeTime = 0.07; % time spend on saccade
 maxJitterRadius = 15; % bounds of random walk before microsaccade back to center
 jitterVariance = 3; % size of each random walk step (variance of normal dist)
-ResizeFactor = 4; % supersampling of pink noise image?
+ResizeFactor = 1; % supersampling of pink noise image?
 Seed = 0; % for random number generators
-Contrast = 1; % of pink noise on top of gray background
+Contrast = 2; % of pink noise on top of gray background
+
+% Initialize Window
+scn=0; % choose screen number
+w=Screen('OpenWindow',scn); 
+[xsize ysize]=Screen('WindowSize', w);
+ifi=Screen('GetFlipInterval',w);
+
 
 % total number of saccades
 nSaccades = floor(Duration/FixationTime); 
@@ -21,11 +28,6 @@ saccadeFrames = floor(SaccadeTime/ifi);
 % number of frames per fixation, including saccade
 fixationFrames = floor(FixationTime/ifi); 
 TotalFrames = Duration / ifi;
-
-% Initialize Window
-scn=1; % choose screen number
-w=Screen('OpenWindow',scn); 
-[xsize ysize]=Screen('WindowSize', w);
 
 % define some colors
 black=BlackIndex(w);
@@ -37,8 +39,6 @@ purple = [white 0 white]';
 yellow = [white white 0]';
 cyan = [0 white white]';
 MeanIntensity=((black+white+1)/2)-1;
-
-ifi=Screen('GetFlipInterval',w);
 
 % utility function to shift rect(s) by offset vector(s)
 fnRectOffset = @(rect,offx,offy) [rect(1,:)+offx; rect(2,:)+offy; ...

@@ -20,7 +20,7 @@ else
 end
 
 beta = -1; % type of noise (0 for white, -1 for pink, -2 for brown)
-maxfreq = Inf; % frequency cutoff?
+maxfreq = 80; % frequency cutoff?
 
 % build up stimulus in frequency domain
 x = [(0:floor(Nx/2)) -(ceil(Nx/2)-1:-1:1)]'/Nx;
