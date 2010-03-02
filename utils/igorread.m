@@ -22,7 +22,7 @@ while(1)
         break;
     end
     C = textscan(nameline, '%s');
-    namelist = C{1}
+    namelist = C{1};
     
     % read in data table
     dat = [];

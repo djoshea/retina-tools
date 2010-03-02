@@ -1,5 +1,7 @@
 function [xc binedges bininds pairinds] = spikecorr(ca, cb, fignum, binedges, crosstype, colors)
 % [xc binedges bininds] = spikecorr(ca, cb, fignum, binedges, colors)
+% spike train crosscorrelation and adjacent spike correlation
+% 
 % ca, cb are spike times [ if isequal(ca,cb), ignores central t=0 bin for autocorr
 % fignum is figure to plot to (optional, 0 means don't plot)
 % binedges are the bins, see histc (optional)
@@ -7,7 +9,7 @@ function [xc binedges bininds pairinds] = spikecorr(ca, cb, fignum, binedges, cr
 % pairs only
 % colors is length(binedges) x 3 colors for each bin (optional)
 %
-% xc is the count in each bin, divided by (binwidth*length(ca)*length(cb))
+% xc is the count in each bin, to make distribution should be divided by (binwidth*length(ca)*length(cb))
 % binedges are the bins
 % bininds 
 %   for crosstype=='all' is length(ca) x length(cb): assignment of each pair 
@@ -110,9 +112,15 @@ if(fignum)
     xlim([mindelta maxdelta]);
     xlabel('Time Offset (ms) [ Cell A - Cell B ]');
     ylabel('Distribution');
+
     if(autocorr)
-        title('Auto Correlation');
+        ttl = 'Auto Correlation';
     else
-        title('Cross Correlation');
+        ttl = 'Cross Correlation';
     end
+    
+    if(~strcmp('crosstype','all'))
+        ttl = [ttl ' (adjacent spikes)'];
+    end
+    title(ttl);
 end

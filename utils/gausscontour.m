@@ -1,4 +1,4 @@
-function [ xepts yepts h ] = gausscontour( mu, sigma, drawcolor, linespec, vectors)
+function [ xepts yepts h ] = gausscontour( mu, sigma, drawcolor, linespec, vectors, label)
 % GAUSSCONTOUR draws the 1-sigma contour of a 2D gaussian function
 % [ xepts yepts ] = gausscontour( mu, sigma, drawcolor, vectors)
 
@@ -33,9 +33,14 @@ if(draw == 1)
     h = plot(xepts, yepts, linespec,'Color', drawcolor, 'LineWidth', 2);
 end
 if(vectors == 1)
-    quiver(mu(1), mu(2), d1*V(1,1), d1*V(2,1), 0,'Color',[0.5 0.5 0.5],'LineWidth',2);
-    quiver(mu(1), mu(2), d2*V(1,2), d2*V(2,2), 0,'Color',[0.5 0.5 0.5],'LineWidth',2);
+    quiver(mu(1), mu(2), d1*V(1,1), d1*V(2,1), 0,'Color',[0.5 0.5 0.5],'LineWidth',1);
+    quiver(mu(1), mu(2), d2*V(1,2), d2*V(2,2), 0,'Color',[0.5 0.5 0.5],'LineWidth',1);
 end
 
+if(exist('label','var'))
+    text(mu(1),mu(2),label);
 end
+
+xlabel('x 100 um');
+ylabel('x 100 um');
 

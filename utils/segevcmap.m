@@ -22,10 +22,12 @@ cmap(17,:) = [0 0.7 0]; % green (medium OFF)
     names{17} = 'Green: Medium OFF';
 cmap(19,:) = [0.7 0 0]; % red (standard adapting/biphasic OFF)
     names{19} = 'Red: Adapting/Biphasic OFF';
-cmap(29,:) = [0.9 0.9 0.6]; % yellow (monophasic OFF)
+cmap(29,:) = [0.9 0.9 0.2]; % yellow (monophasic OFF)
     names{29} = 'Yellow: Monophasic OFF';
 cmap(43,:) = [0 0 0.7]; % blue (slow ON)
     names{43} = 'Blue: Slow ON';
+cmap(45,:) = [0.8 0.48 0.96]; % purple
+    names{45} = 'Purple: Sensitizing?';
 cmap(50,:) = greylevel*ones(1,3);
     names{50} = 'Unclassified';
 

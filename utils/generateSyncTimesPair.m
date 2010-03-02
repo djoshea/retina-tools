@@ -1,4 +1,4 @@
-function times = generateSyncTimesPair(ca, cb, fignum, twind, cwind, crosstype)
+function [times] = generateSyncTimesPair(ca, cb, fignum, twind, cwind, crosstype)
 % ca, cb are firing times for the pair
 % twind is a W x 2 set of lower, upper bounds on relative firing times
 % cwind is W x 3 color associated with each window for the plot (optional)
@@ -43,7 +43,7 @@ end
 times = cell(W,2);
 for w = 1:W
      % bins that fall into this window
-    inds = find(binedge >= twind(w,1) & binedge <= twind(w,2));
+    inds = find(binedge >= twind(w,1) & binedge < twind(w,2));
     % spike pairs that fall into these bins
     if(strcmp(crosstype, 'all'))
         [i j] = find(bininds >= min(inds) & bininds <= max(inds));
