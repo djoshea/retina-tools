@@ -13,6 +13,7 @@ def.axh = 0; % axis to plot on, 0 means no plot
 def.grouptype = 'pair'; % pair or triplet [ not implemented! ]
 def.recordedEdgeColor = [0 0 0];
 def.missingEdgeColor = [0.4 0.4 0.4];
+def.linewidth = 1;
 assignargs(def,varargin); 
 
 % pare down list for triangulation
@@ -80,7 +81,7 @@ if(axh)
             end
             hands(end+1) = plot(axh, [ x0(edge(ei,1)) x0(edge(ei,2)) ], ...
                                      [ y0(edge(ei,1)) y0(edge(ei,2)) ], ...
-                                spec, 'Color', col, 'LineWidth', 2);
+                                spec, 'Color', col, 'LineWidth', linewidth);
         end
     end
 end
