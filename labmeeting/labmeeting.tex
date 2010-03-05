@@ -1,0 +1,324 @@
+\documentclass{beamer}
+\mode<presentation>
+{
+	\usetheme{Malmoe}
+%	\usetheme{Darmstadt}
+}
+
+\usepackage[absolute,overlay]{textpos}
+
+\newcommand*\oldmacro{}%
+\let\oldmacro\insertshorttitle%
+\renewcommand*\insertshorttitle{%
+  \oldmacro\hfill%
+  \insertframenumber\,/\,\inserttotalframenumber}
+
+\title[Enhanced Spatial Acuity via Concerted Firing]{Enhanced Spatial Acuity via Concerted Firing \\ of Retinal Ganglion Cells?}
+\author[Daniel O'Shea (\textit{djoshea@stanford.edu})]{Daniel O'Shea \\
+			\small{djoshea@stanford.edu} \\
+ 			\normalsize{\phantom{A}}}
+\institute{\footnotesize{Baccus Lab Meeting}}
+\date[]{\footnotesize{5 March 2010}}
+
+\begin{document}
+\textblockorigin{0cm}{0cm}
+
+\frame{\titlepage}
+
+\frame{\tableofcontents}
+
+\section{Retinal Ganglion Population Supersampling}
+\subsection{Purpose and Method}
+\frame
+{
+  \frametitle{Retinal Ganglion Population Supersampling}
+
+  \begin{block}{Low Density vs. High Density}
+  	\begin{itemize}
+		\item Low density array covers 700 $\mu$m$^2$ at 100 $\mu$m sampling
+		\item High density array covers 150 $\mu$m$^2$ at 30 $\mu$m sampling
+		\item Best of both worlds?
+	\end{itemize}
+  \end{block}
+  \onslide<2->
+  \begin{block}{Idea}
+	\begin{itemize}
+		\item Record with low density
+		\item Pick up and translate retina relative to the array
+		\item Set down and xrepeat
+	\end{itemize}
+  \end{block}
+}
+
+\subsection{Registration of Receptive Field Maps}
+\frame
+{
+	\frametitle{Four Maps, Pre-Alignment}
+	\begin{center}
+	\includegraphics[width=90mm]{prealign.png}
+	\end{center}
+}
+
+\frame
+{
+	\frametitle{Alignment Algorithm: \only<1>{Generate Candidate Offsets}\onslide<2>{Smooth, Pick Maximum}
+	}
+	\only<1>{
+	\begin{center}
+	\includegraphics[width=80mm]{fig_offsets.pdf}
+	\end{center}}
+	\onslide<2>
+	\begin{center}
+	\includegraphics[width=80mm]{fig_offsetsheat.pdf}
+	\end{center}
+}
+
+\frame
+{
+	\frametitle{Four Maps: Post-Alignment}
+	\begin{center}
+	\includegraphics[width=90mm]{postalign.png}
+	\end{center}
+}
+
+\frame
+{
+	\frametitle{Four Maps: Post-Merge}
+	\begin{center}
+	\includegraphics[width=90mm]{postmerge.png}
+	\end{center}
+}
+
+\subsection{Pairwise Simultaneous Recording}
+\frame
+{
+	\frametitle{Pairwise Simultaneity Matrix}
+	\begin{center}
+	\includegraphics[height=70mm]{pairwisesimul.png}
+	\end{center}
+}
+
+\frame
+{
+	\frametitle{Adjacent Neighbor Simultaneity}
+	\begin{center}
+	\includegraphics[height=70mm]{adjacentsimul.png}
+	\end{center}
+}
+
+\section{Event Triggered Analysis of Synchronous Firing}
+\subsection{Synchronous Events in Retinal Ganglion Cells}
+\frame
+{
+\begin{block}{Ubiquity of Synchronized Firing}
+\begin{itemize}
+	\item Found in RGC populations of goldfish, salamander, frog, rat, mouse, rabbit, guinea pig, cat, and macaque \\(Schlens et al. 2008)
+	\item Dependency on functional type and receptive field separation; 500 $\mu$m spatial scale (Meister 1996)
+	\end{itemize}
+\end{block}
+\onslide<2->
+\begin{block}{Timescales (Mastronarde 1983)}
+\begin{itemize}
+	\item \textbf{50 ms}: Quantal fluctuations in shared photoreceptors
+	\item \textbf{10 ms}: Shared presynaptic amacrine input
+	\item \textbf{1 ms}: Gap junction coupling
+\end{itemize}
+\end{block}
+}
+
+\frame{
+\begin{block}{Role in Retinal Signaling?}
+\begin{itemize}
+	\item<1-> Multiplexing in RGCs trade temporal bandwidth for spatial acuity (Meister  1996)
+		\item<2-> Synchonization induced by fixational eye movements improves feature estimation, internal trigger signal \\(Greschner et al. 2002)
+	\item<3-> Multineuronal codes convey higher resolution information than predicted from single cell analysis \\(Schnitzer and Meister 2003)
+		\item<4-> Exploited in population decoding to recover 20\% more information (Pillow et al. 2008)
+\end{itemize}
+\end{block}
+}
+
+\subsection{Proportion of Synchronous Events in RF Map Data}
+\frame{
+\begin{block}{Synchronous Event Proportion}
+\begin{itemize}
+\item Consider only \textbf{adjacent spikes} across pair
+\item If a pair of spikes (one from each cell) lie within $\Delta T$ ms, consider them a synchronous pair
+\item Calculate the proportion of total spikes from both cells that are part of a synchronous pair
+\end{itemize}
+\end{block}
+
+For a given pair of cells, measures the proportion of synchronous events sent out the optic nerve
+}
+
+\frame{
+\frametitle{Synchronous Event Proportion: Distance and Cell Type}
+$\Delta T$ = \only<1>{50}\only<2>{20}\only<3>{10}\only<4>{5}\only<5>{1} ms
+
+\begin{center}
+\only<1>{\includegraphics[height=60mm]{syncprop50.pdf}}
+\only<2>{\includegraphics[height=60mm]{syncprop20.pdf}}
+\only<3>{\includegraphics[height=60mm]{syncprop10.pdf}}
+\only<4>{\includegraphics[height=60mm]{syncprop5.pdf}}
+\only<5>{\includegraphics[height=60mm]{syncprop1.pdf}}
+\end{center}
+
+}
+
+\subsection{Pairwise Relative Timing}
+\frame
+{
+\begin{block}{Beyond Synchrony: Pairwise Relative Timing}
+\begin{itemize}
+\item RGCs encode the spatial structure of a briefly presented image in the relative timing of their first spikes (Gollisch and Meister 2008)
+\end{itemize}
+\end{block}
+\onslide<2->
+\begin{block}{What Information does Relative Timing Convey?}
+\begin{itemize}
+\item Extend LN models used for single cell analysis to generalized ``event times''
+\item \textbf{Event triggered average} conveys best guess of stimulus preceding that event
+\end{itemize}
+\end{block}
+}
+
+\frame
+{
+\begin{block}{Extension of Synchronous Receptive Field}
+\begin{itemize}
+\item Receptive fields of synchronous events are smaller than both RFs and lie at the intersection (Meister 1995)
+\end{itemize}
+\end{block}
+
+\begin{center}
+\includegraphics[height=40mm]{meister1995.pdf}
+\end{center}
+}
+
+\frame
+{
+\frametitle{Receptive Field Map (Single Recording)}
+
+\begin{center}
+\includegraphics[height=70mm]{rf5map.pdf}
+\end{center}
+}
+
+\frame
+{
+\frametitle{\only<1>{Adjacent Spike Cross Correlation}\only<2>{Relative Timing RFs} (Adjacent, Wide)}
+
+\only<1>{
+\begin{center}
+\includegraphics[height=70mm]{spikecorr1v2.pdf}
+\end{center}
+\begin{textblock*}{25mm}[0,0](82mm,22mm)%
+\includegraphics[width=25mm]{rfmap1v2.pdf}
+\end{textblock*}
+}
+
+\only<2>{
+\begin{center}
+\includegraphics[height=70mm]{syncpair1v2.pdf}
+\end{center}
+}
+}
+
+\frame
+{
+\frametitle{\only<1>{Adjacent Spike Cross Correlation}\only<2>{Relative Timing RFs} (Adjacent, Narrow)}
+
+\only<1>{
+\begin{center}
+\includegraphics[height=70mm]{spikecorr2v33.pdf}
+\end{center}
+\begin{textblock*}{25mm}[0,0](82mm,22mm)%
+\includegraphics[width=25mm]{rfmap2v33.pdf}
+\end{textblock*}
+}
+
+\only<2>{
+\begin{center}
+\includegraphics[height=70mm]{syncpair2v33.pdf}
+\end{center}
+}
+}
+
+\frame
+{
+\frametitle{\only<1>{Adjacent Spike Cross Correlation}\only<2>{Relative Timing RFs} (Fast vs. Medium OFF)}
+
+\only<1>{
+\begin{center}
+\includegraphics[height=70mm]{spikecorr20v21.pdf}
+\end{center}
+\begin{textblock*}{25mm}[0,0](82mm,22mm)%
+\includegraphics[width=25mm]{rfmap20v21.pdf}
+\end{textblock*}
+}
+
+\only<2>{
+\begin{center}
+\includegraphics[height=70mm]{syncpair20v21.pdf}
+\end{center}
+}
+}
+
+\frame{
+\frametitle{Adjacent Pair Relative Timing RFs}
+
+\begin{center}
+\includegraphics[height=70mm]{syncpairadj.pdf}
+\end{center}
+
+}
+
+
+\frame{
+\frametitle{Relative Timing RFs \textbf{Span} Adjacent Pair RFs}
+
+\begin{center}
+\includegraphics[height=70mm]{syncrfspan.pdf}
+\end{center}
+
+}
+
+
+\frame{
+\frametitle{Relative Timing RFs \textbf{Interpolate} Between Adjacent Pairs}
+\begin{center}
+\includegraphics[height=70mm]{syncrflines.pdf}
+\end{center}
+}
+
+\section{Conclusion}
+\subsection{RGC Population Supersampling}
+\frame{
+\begin{block}{RGC Population Supersampling}
+\begin{itemize}
+\item Record, lift, translate process allows spatial supersampling of RGC population
+\item Small shifts preserve simultaneity between pairs
+\item Sampling bias persists, some cells are rarely sorted on low density array
+\end{itemize}
+\end{block}
+}
+
+\subsection{Synchronous and Relative Timing in Pairwise Activity}
+\frame{
+\begin{block}{Synchronous Events}
+\begin{itemize}
+\item Synchronous events are frequent among nearby pairs
+\item Proportion of synchronous events decreases with distance, reduced across functional type
+\end{itemize}
+\end{block}
+
+\begin{block}{Relative Timing RFs}
+\begin{itemize}
+\item Relative Timing RFs span the connecting line between adjacent cells
+\item Smooth interpolation may allow for enhanced spatial acuity
+\item Relative timing carries information at image onset; downstream circuitry could be utilized during fixation
+\item Role of fixational eye movements?
+\end{itemize}
+\end{block}
+}
+
+\end{document}

@@ -86,13 +86,24 @@ newoffset = offset + [X(ind), Y(ind)];
 
 % % plot gaussian smoothed heat map
 % figure(2), clf
-% pcolor(X,Y,density)
+% h = pcolor(X,Y,density);
+% set(h,'EdgeColor','None');
+% title('Smoothed Offset Heatmap');
+% xlabel('x 100 um');
+% ylabel('x 100 um');
+% box off
 % 
-% plot sampled points and offset vector
+% 
+% 
+% % plot sampled points and offset vector
 % figure(8), clf;
-% plot(Xdelta(validpair), Ydelta(validpair), 'r.');
+% plot(Xdelta(validpair), Ydelta(validpair), 'ro','MarkerSize',5,'MarkerFaceColor','r');
 % hold on
 % quiver(0, 0, X(ind), Y(ind),'-', 'LineWidth',2,'Color',[0.4 0.4 0.4]);
 % pause(0.4)
+% box off
+% title('Candidate Offset Vectors');
+% xlabel('x 100 um');
+% ylabel('x 100 um');
 
 end

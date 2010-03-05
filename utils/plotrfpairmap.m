@@ -116,7 +116,7 @@ for ei = 1:nedges % loop over cell pairs to plot
                 projcentlength{ei,w} = dot(mu'-camu,cbmu-camu) / norm(cbmu-camu)^2;
                 
                 plot(pt(1),pt(2),'o','MarkerEdgeColor',color,'MarkerSize',5,'MarkerFaceColor',facecolor);
-            else
+            end
                 % plot the ellipses of each sync rf, not just the center
                 % dot
                 try
@@ -126,7 +126,7 @@ for ei = 1:nedges % loop over cell pairs to plot
                     handles{ei,w,di} = NaN;
                     disp('error!')
                 end
-            end
+%             end
         end
     end
     

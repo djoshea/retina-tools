@@ -70,6 +70,7 @@ function [checkmaph checkcolorh] = initGui()
     movegui(figh, 'center');
     set(figh,'Name','Receptive Field Map Alignment');
     set(figh,'NumberTitle','off');
+    set(figh,'MenuBar','none');
     title(handles.currentTitle);
     % position the axes and add some controls
     set(figh,'Toolbar','none');
@@ -492,7 +493,7 @@ end
 function drawMerged()
     xl = get(axh,'XLim'); yl = get(axh, 'YLim');
     handles = guidata(axh);
-    handles.rfmergehand = plotrfmap(rfmerge, figh);
+    handles.rfmergehand = plotrfmap(rfmerge, 'fignum',figh);
     handles.uniqueVisible = ones(length(handles.rfmergehand),1);
     guidata(axh, handles);
     
@@ -516,7 +517,8 @@ function drawAllMaps(keepaxes)
     handles.drawMode = 'allmaps';
     handles.rfhand = cell(nrf,1);
     for mi = 1:nrf
-        handles.rfhand{mi} = plotrfmap(rfs{mi}, figh, colormults(mi), rfoffset(mi,:));
+        handles.rfhand{mi} = plotrfmap(rfs{mi}, ...
+            'fignum',figh, 'colormult',colormults(mi), 'offset', rfoffset(mi,:));
     end
     axis manual
     
@@ -624,7 +626,8 @@ function adjacentSimul(hobj, ~, ~)
         selrfunique = rfmerge.Parameters(logical(handles.uniqueVisible),:);
         selfoundinmap = foundinmap(logical(handles.uniqueVisible),logical(handles.mapVisible));
         
-        [pairEdge pairEdgeSimul edgeHands] = adjacencySimultaneity( selrfunique, selfoundinmap, 'pair', axh);
+        [pairEdge pairEdgeSimul edgeHands] = adjacencySimultaneity( selrfunique, ...
+            'foundinmap', selfoundinmap, 'linewidth', 2, 'grouptype', 'pair', 'axh', axh);
         
         handles.pairEdgeHand = edgeHands;
         handles.pairEdgeVisible = 1;

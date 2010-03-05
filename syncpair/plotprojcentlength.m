@@ -104,6 +104,8 @@ end
 plot([-100 100],[0 0; 1 1]','--', 'LineWidth',1,'Color',[1 0 0]);
 
 title('Normalized Connecting Line Distances (sorted by span)');
+xlabel('Edge Order (sorted by normalized span)');
+ylabel('Normalized Connecting Line Distances');
 ylim([-0.2 1.2]);
 xlim([-0.1 nedges+0.1]);
 
